@@ -37,10 +37,20 @@ for i in range(15):  # Số lần cuộn (tùy chỉnh)
         # Luôn lấy lại phần tử mới sau mỗi vòng cuộn
           name_element = driver.find_elements(By.XPATH, '//div[contains(@class, "contact-item-v2-wrapper")]//span[contains(@class, "name")]')[i]
           name = name_element.text
-          if name and name not in collected_names:
-              collected_names.add(name)
-              print("➕ Nhóm:", name)
-              append_stt_and_name(name)
+          parent = name_element.find_element(By.XPATH, "./ancestor::div[contains(@class, 'contact-item-v2-wrapper')]")
+          try:
+              member_element = parent.find_element(By.CSS_SELECTOR, "a.description.left.members")
+              member = member_element.text
+          except:
+              member = "Không tìm thấy số thành viên"
+          if not member or not name:
+              member = "Không tìm thấy số thành viên"
+          else:
+            group = (name, member)
+            if group and group not in collected_names:
+                collected_names.add(group)
+                print("➕ Nhóm:", name," Số thành viên:", member)
+                append_stt_and_name(group)
         except Exception as e:
           print(f"Lỗi khi lấy tên nhóm: {e}")
 

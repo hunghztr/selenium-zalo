@@ -15,6 +15,10 @@ def open_zalo():
     # Thiết lập Chrome Options để kết nối tới phiên Chrome đang mở
     chrome_options = Options()
     chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+    # ➕ Thêm tùy chọn kích thước và vị trí cửa sổ (nửa màn hình bên phải)
+    chrome_options.add_argument("--window-size=960,1080")
+    chrome_options.add_argument("--window-position=960,0")
+
     # Kết nối tới Chrome đang mở
     driver = webdriver.Chrome(options=chrome_options)
     wait = WebDriverWait(driver, 30)
