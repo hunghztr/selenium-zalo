@@ -48,6 +48,7 @@ def send_message_to_group():
     search_box = driver.find_element(By.ID, "contact-search-input")
     values = get_data_from_sheet()
     sended = list()
+    finished = 0
     for value in values:
         search_box.click()
         print("Đã click vào ô tìm kiếm")
@@ -86,6 +87,7 @@ def send_message_to_group():
         time.sleep(0.5)
         isSuccess = send_message(content)
         if isSuccess:
+            finished += 1
             print(f"Đã gửi tin nhắn đến nhóm: {group_name_from_sheet}")
         else:
             print(f"Không gửi được tin nhắn đến nhóm: {group_name_from_sheet}")
@@ -96,6 +98,7 @@ def send_message_to_group():
             print(f"Không tìm thấy nút back: {e}")
         time.sleep(0.5)
         back_btn.click()
+    print(f"✅ Đã gửi tin nhắn đến {finished} nhóm")
 driver,wait = open_zalo()
 
 send_message_to_group()
