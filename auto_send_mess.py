@@ -1,52 +1,48 @@
-
-from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.chrome.options import Options
 from open_zalo import open_zalo
 from data_from_sheet import get_data_from_sheet
 from selenium.webdriver.common.keys import Keys
 import re
-
+# *
+# LƯU Ý KHI CHẠY TOOL CẦN THU NỬA MÀN HÌNH ĐỂ CODE KHÔNG LỖI
+# *
 def remove_non_bmp_chars(text):
-    return re.sub(r'[^\u0000-\uFFFF]', '', text)
+    # Chỉ giữ lại: chữ cái Latin + tiếng Việt có dấu + số + dấu câu + khoảng trắng
+    pattern = r"[^a-zA-Z0-9ÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠƯàáâầậãèéêếểệễìíòóôổộõùúăđĩũơớợởưửẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀẾỂỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỴÝỶỸỳỵỷỹ\s.,:;!?+-]"
+    text = re.sub(pattern, ' ', text)
 
-def scroll_and_click_groups(browser, interval=20):
+    # Loại bỏ các ký tự ngoài BMP (như emoji, chữ Trung-Nhật-Hàn,...)
+    text = re.sub(r'[^\u0000-\uFFFF]', ' ', text)
+
+    # Gộp khoảng trắng liên tiếp thành 1
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
+def send_message(content):
     try:
-       
-        groups = browser.find_elements(By.XPATH, "//div[contains(@class, 'msg-item')]")
-        print(f"Tổng số nhóm: {len(groups)}")
-        for group in groups:
-            group.click()
-            print("Đã click vào nhóm ", group.text)
-            time.sleep(5)
-            # Chờ khung nhập tin nhắn xuất hiện
-            input_box = wait.until(EC.presence_of_element_located((By.ID, "input_line_0")))
-
-            # Nhập nội dung tin nhắn
-            input_box.click()
-            input_box.send_keys("hello")
-            time.sleep(1)
-                # Gửi tin nhắn bằng cách ấn Enter
-            input_box.send_keys("\n")
-
-            print("Đã gửi tin nhắn")
-    except Exception as e:
-        print(f"loi",e)
-def send_message():
-    try:
-        WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, 'input_line_0')))
+        contents = content.split("\n")
+        WebDriverWait(driver, 2).until(EC.presence_of_element_located((By.ID, 'input_line_0')))
         input_box = driver.find_element(By.ID, "input_line_0")
         input_box.click()
-        input_box.send_keys("hello")
-        time.sleep(1)
-        input_box.send_keys("\n")
+        for c in contents:
+            input_box = driver.find_element(By.ID, "input_line_0")
+            input_box.send_keys(c)
+            input_box.send_keys(Keys.SHIFT, Keys.ENTER)
+          
+        time.sleep(0.5)
+        input_box = driver.find_element(By.ID, "input_line_0")
+        input_box.send_keys(Keys.ENTER)
+        time.sleep(0.5)
+        
     except Exception as e:
         print(f"Không tìm thấy ô nhập tin nhắn: {e}")
-    time.sleep(1)
+        return False
+    time.sleep(0.5)
+    return True
 def send_message_to_group():
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'contact-search-input')))
     search_box = driver.find_element(By.ID, "contact-search-input")
@@ -56,22 +52,23 @@ def send_message_to_group():
         search_box.click()
         print("Đã click vào ô tìm kiếm")
         stt = value[0] if len(value) > 0 else ""
-        group_name = value[1] if len(value) > 1 else ""
+        group_name_from_sheet = value[1] if len(value) > 1 else ""
         members = value[2] if len(value) > 2 else ""
-        print(f"STT: {stt} | GROUP NAME: {group_name} | MEMBERS: {members}")
-        group_name = remove_non_bmp_chars(group_name)
+        content = value[3] if len(value) > 3 else ""
+        print(f"STT: {stt} | GROUP NAME: {group_name_from_sheet} | MEMBERS: {members} | CONTENT: {content}")
+        group_name_from_sheet = remove_non_bmp_chars(group_name_from_sheet)
         time.sleep(0.5)
-        # kiểm tra nhóm này trùng tên với nhóm đa gửi hay không
-        if group_name in sended:
-            count = sended.count(group_name)
-            search_box.send_keys(group_name)
+        # kiểm tra nhóm này trùng tên với nhóm đã gửi hay không
+        if group_name_from_sheet in sended:
+            count = sended.count(group_name_from_sheet)
+            search_box.send_keys(group_name_from_sheet)
             time.sleep(0.5)
             # lấy ra danh sách kết quả tìm kiếm
             group_items = driver.find_elements(By.XPATH, "//div[starts-with(@id, 'group-item-')]")
             time.sleep(0.5)
             group_items[count].click()
         else:
-            search_box.send_keys(group_name)
+            search_box.send_keys(group_name_from_sheet)
             time.sleep(0.5)
             # lấy ra danh sách kết quả tìm kiếm
             group_items = driver.find_elements(By.XPATH, "//div[starts-with(@id, 'group-item-')]")
@@ -79,29 +76,28 @@ def send_message_to_group():
                 time.sleep(0.5)
                 name_element = item.find_element(By.CLASS_NAME, "truncate")
                 time.sleep(0.5)
-                # spans = name_element.find_elements(By.CLASS_NAME, "txt-highlight")
-                # print(f"Số lượng phần tử tìm thấy: {len(spans)}")
-                # for span in spans:
-                #     print(f"Span text: {span.text}")
-                # name = "".join(span.text + " " for span in spans).strip()
-                name = name_element.text.split("\n")[0]
-                print(f"Tên nhóm tìm kiếm: {name}")
-                if name in group_name:
+                name_from_result = remove_non_bmp_chars(name_element.text.split("\n")[0])
+                print(f"Tên nhóm tìm kiếm: {name_from_result}")
+                if name_from_result in group_name_from_sheet:
                     item.click()
-                    print(f"Đã click vào nhóm: {name}")
+                    print(f"Đã click vào nhóm: {name_from_result}")
                     break
-        sended.append(group_name)
+        sended.append(group_name_from_sheet)
         time.sleep(0.5)
-        send_message()
-        print(f"Đã gửi tin nhắn đến nhóm: {group_name}")
+        isSuccess = send_message(content)
+        if isSuccess:
+            print(f"Đã gửi tin nhắn đến nhóm: {group_name_from_sheet}")
+        else:
+            print(f"Không gửi được tin nhắn đến nhóm: {group_name_from_sheet}")
         # bấm nút back để quay lại danh sách nhóm
-        back_btn = driver.find_element(By.XPATH, "//div[contains(@class, 'conv-back-btn')]")
+        try:
+            back_btn = driver.find_element(By.XPATH, "//div[contains(@class, 'conv-back-btn')]")
+        except Exception as e:
+            print(f"Không tìm thấy nút back: {e}")
         time.sleep(0.5)
         back_btn.click()
 driver,wait = open_zalo()
 
 send_message_to_group()
 
-
-input("Nhấn Enter để đóng trình duyệt...")
 driver.quit()

@@ -16,7 +16,7 @@ def get_auth():
 def get_data_from_sheet():
   service, spreadsheet_id, sheet_name = get_auth()
 # Lấy dữ liệu từ cột A và B, bắt đầu từ dòng 1
-  range_name = f'{sheet_name}!A1:C'
+  range_name = f'{sheet_name}!A1:D'
   result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
   values = result.get('values', [])
   return values
